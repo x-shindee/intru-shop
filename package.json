@@ -1,5 +1,5 @@
 {
-  "name": "intru-store",
+  "name": "webapp",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,7 @@
     "pages:build": "npx @cloudflare/next-on-pages",
     "preview": "npm run pages:build && wrangler pages dev",
     "deploy": "npm run pages:build && wrangler pages deploy",
-    "cf:deploy": "npm run pages:build && wrangler pages deploy --project-name intru-store",
+    "cf:deploy": "npm run pages:build && wrangler pages deploy --project-name webapp",
     "git:push": "git add . && git commit -m 'Deploy updates' && git push origin main"
   },
   "dependencies": {
