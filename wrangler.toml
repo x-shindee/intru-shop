@@ -18,8 +18,8 @@ name = "intru-store"
 # - NEXT_PUBLIC_WHATSAPP_NUMBER
 # - NEXT_PUBLIC_APP_URL
 
-[build]
-command = "npm run pages:build"
+############################################################################################[build]
+#command = "npm run pages:build"
 
-[build.upload]
-format = "service-worker"
+#[build.upload]
+#format = "service-worker"
