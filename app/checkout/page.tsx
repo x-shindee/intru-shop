@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { formatPrice } from '@/lib/utils'
-import { calculateOrderTotal } from '@/lib/gst'
-import type { CartItem } from '@/lib/types'
+import type { CartItem, StoreConfig, CustomCharge } from '@/lib/types'
 
 declare global {
   interface Window {
@@ -17,6 +16,11 @@ export default function CheckoutPage() {
   const router = useRouter()
   const [cart, setCart] = useState<CartItem[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  const [storeConfig, setStoreConfig] = useState<StoreConfig | null>(null)
+  const [isCODAllowed, setIsCODAllowed] = useState(true)
+  const [referralCode, setReferralCode] = useState('')
+  const [referralDiscount, setReferralDiscount] = useState(0)
+  const [referralError, setReferralError] = useState('')
   
   // Form state
   const [paymentType, setPaymentType] = useState<'prepaid' | 'cod'>('prepaid')
@@ -39,6 +43,9 @@ export default function CheckoutPage() {
     }
     setCart(cartData)
 
+    // Fetch store config
+    fetchStoreConfig()
+
     // Load Razorpay script
     const script = document.createElement('script')
     script.src = 'https://checkout.razorpay.com/v1/checkout.js'
@@ -46,24 +53,84 @@ export default function CheckoutPage() {
     document.body.appendChild(script)
   }, [router])
 
-  const subtotal = cart.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0
-  )
+  const fetchStoreConfig = async () => {
+    try {
+      const response = await fetch('/api/config/store')
+      const data = await response.json()
+      setStoreConfig(data.config)
+    } catch (error) {
+      console.error('Failed to fetch store config:', error)
+    }
+  }
 
-  const shipping_cost = 0
-  const { taxAmount, taxBreakdown, total } = calculateOrderTotal(
-    subtotal,
-    shipping_cost,
-    formData.state
-  )
+  const checkPincodeForCOD = async (pincode: string) => {
+    if (!pincode || pincode.length !== 6) return
+
+    try {
+      const response = await fetch(`/api/config/check-pincode?pincode=${pincode}`)
+      const data = await response.json()
+      setIsCODAllowed(!data.blocked)
+      
+      if (data.blocked && paymentType === 'cod') {
+        setPaymentType('prepaid')
+      }
+    } catch (error) {
+      console.error('Failed to check pincode:', error)
+    }
+  }
+
+  const applyReferralCode = async () => {
+    if (!referralCode) return
+
+    setReferralError('')
+    const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+
+    try {
+      const response = await fetch('/api/referral/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: referralCode, orderAmount: subtotal }),
+      })
+
+      const data = await response.json()
+
+      if (data.valid) {
+        setReferralDiscount(data.discount_amount)
+      } else {
+        setReferralError(data.error || 'Invalid referral code')
+        setReferralDiscount(0)
+      }
+    } catch (error) {
+      setReferralError('Failed to apply referral code')
+      setReferralDiscount(0)
+    }
+  }
+
+  // Calculate totals
+  const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
+  const savings = cart.reduce((sum, item) => {
+    const savings = item.product.compare_at_price 
+      ? (item.product.compare_at_price - item.product.price) * item.quantity
+      : 0
+    return sum + savings
+  }, 0)
+
+  const shipping_cost = storeConfig?.free_shipping_enabled ? 0 : (storeConfig?.default_shipping_cost || 0)
+  
+  // Custom charges (only show if enabled)
+  const customCharges: CustomCharge[] = storeConfig?.extra_charges_enabled ? (storeConfig.custom_charges || []) : []
+  const customChargesTotal = customCharges.reduce((sum, charge) => sum + charge.amount, 0)
+
+  // Calculate tax (18% GST)
+  const amountBeforeTax = subtotal - referralDiscount + shipping_cost + customChargesTotal
+  const taxAmount = amountBeforeTax * 0.18
+  const total = amountBeforeTax + taxAmount
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      // Prepare order data
       const orderData = {
         customer_email: formData.email,
         customer_name: formData.name,
@@ -99,9 +166,10 @@ export default function CheckoutPage() {
           image_url: item.product.image_url,
         })),
         payment_type: paymentType,
+        referral_code: referralCode || null,
+        custom_charges: customCharges,
       }
 
-      // Create order
       const response = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -115,7 +183,6 @@ export default function CheckoutPage() {
       }
 
       if (paymentType === 'prepaid') {
-        // Open Razorpay checkout
         const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           amount: result.amount * 100,
@@ -124,7 +191,6 @@ export default function CheckoutPage() {
           description: 'Order Payment',
           order_id: result.razorpay_order_id,
           handler: async function (response: any) {
-            // Verify payment
             const verifyResponse = await fetch('/api/orders/verify-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -158,7 +224,6 @@ export default function CheckoutPage() {
         const razorpay = new window.Razorpay(options)
         razorpay.open()
       } else {
-        // COD order - redirect to verification page
         localStorage.removeItem('cart')
         router.push(`/verify-cod?order_id=${result.order_id}&order_number=${result.order_number}`)
       }
@@ -172,7 +237,6 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white shadow-sm">
         <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="text-2xl font-bold">
@@ -280,20 +344,56 @@ export default function CheckoutPage() {
                         required
                         pattern="[0-9]{6}"
                         value={formData.pincode}
-                        onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                        onChange={(e) => {
+                          setFormData({ ...formData, pincode: e.target.value })
+                          if (e.target.value.length === 6) {
+                            checkPincodeForCOD(e.target.value)
+                          }
+                        }}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                        placeholder="6-digit pincode"
+                        placeholder="6-digit"
                       />
                     </div>
                   </div>
                 </div>
               </div>
 
+              {/* Referral Code (only show if enabled) */}
+              {storeConfig?.is_referral_enabled && (
+                <div>
+                  <h2 className="text-2xl font-semibold mb-4">Have a Referral Code?</h2>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      placeholder="Enter code"
+                      className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={applyReferralCode}
+                      className="px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                  {referralError && (
+                    <p className="text-red-500 text-sm mt-2">{referralError}</p>
+                  )}
+                  {referralDiscount > 0 && (
+                    <p className="text-green-600 text-sm mt-2">
+                      ✓ Referral discount applied: {formatPrice(referralDiscount)}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Payment Method */}
               <div>
                 <h2 className="text-2xl font-semibold mb-4">Payment Method</h2>
                 <div className="space-y-3">
-                  <label className="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-black transition-colors">
+                  <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-black transition-colors ${paymentType === 'prepaid' ? 'border-black bg-gray-50' : 'border-gray-300'}`}>
                     <input
                       type="radio"
                       name="payment"
@@ -307,18 +407,29 @@ export default function CheckoutPage() {
                       <p className="text-sm text-green-600">✓ FREE Shipping</p>
                     </div>
                   </label>
-                  <label className="flex items-center p-4 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-black transition-colors">
+                  <label className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-colors ${
+                    !isCODAllowed 
+                      ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60' 
+                      : paymentType === 'cod' 
+                      ? 'border-black bg-gray-50' 
+                      : 'border-gray-300 hover:border-black'
+                  }`}>
                     <input
                       type="radio"
                       name="payment"
                       value="cod"
                       checked={paymentType === 'cod'}
                       onChange={(e) => setPaymentType(e.target.value as 'cod')}
+                      disabled={!isCODAllowed}
                       className="mr-3"
                     />
                     <div className="flex-1">
                       <span className="font-semibold">Cash on Delivery (COD)</span>
-                      <p className="text-sm text-gray-600">Requires WhatsApp verification</p>
+                      {isCODAllowed ? (
+                        <p className="text-sm text-gray-600">Requires WhatsApp verification</p>
+                      ) : (
+                        <p className="text-sm text-red-600">Not available for this pincode</p>
+                      )}
                     </div>
                   </label>
                 </div>
@@ -334,50 +445,79 @@ export default function CheckoutPage() {
             </form>
           </div>
 
-          {/* Order Summary */}
+          {/* Order Summary - Clean UI */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg p-6 sticky top-24">
               <h2 className="text-2xl font-bold mb-6">Order Summary</h2>
 
-              <div className="space-y-4 mb-6">
+              {/* Items */}
+              <div className="space-y-4 mb-6 border-b pb-6">
                 {cart.map((item, index) => (
                   <div key={index} className="flex gap-3">
-                    <div className="text-sm">
+                    <div className="text-sm flex-1">
                       <p className="font-medium">{item.product.title}</p>
                       <p className="text-gray-600">
                         Size: {item.size} × {item.quantity}
                       </p>
                     </div>
-                    <div className="ml-auto font-semibold">
+                    <div className="font-semibold">
                       {formatPrice(item.product.price * item.quantity)}
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="border-t pt-4 space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
+              {/* Pricing Breakdown - Clean UI */}
+              <div className="space-y-3">
+                {/* Items Total */}
+                <div className="flex justify-between text-lg">
+                  <span className="text-gray-600">Items Total</span>
                   <span className="font-semibold">{formatPrice(subtotal)}</span>
                 </div>
+
+                {/* Savings (if any) */}
+                {savings > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Savings</span>
+                    <span className="font-semibold">-{formatPrice(savings)}</span>
+                  </div>
+                )}
+
+                {/* Referral Discount (if applied) */}
+                {referralDiscount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Referral Discount</span>
+                    <span className="font-semibold">-{formatPrice(referralDiscount)}</span>
+                  </div>
+                )}
+
+                {/* Shipping */}
                 <div className="flex justify-between">
                   <span className="text-gray-600">Shipping</span>
-                  <span className="font-semibold text-green-600">FREE</span>
+                  <span className="font-semibold text-green-600">
+                    {shipping_cost === 0 ? 'FREE' : formatPrice(shipping_cost)}
+                  </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">GST (18%)</span>
+
+                {/* Custom Charges (only if enabled) */}
+                {customCharges.length > 0 && customCharges.map((charge, index) => (
+                  <div key={index} className="flex justify-between text-sm">
+                    <span className="text-gray-600">{charge.label}</span>
+                    <span className="font-semibold">{formatPrice(charge.amount)}</span>
+                  </div>
+                ))}
+
+                {/* Tax */}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Tax (GST 18%)</span>
                   <span className="font-semibold">{formatPrice(taxAmount)}</span>
-                </div>
-                <div className="text-xs text-gray-500">
-                  {taxBreakdown.cgst && taxBreakdown.sgst
-                    ? `CGST (9%): ${formatPrice(taxBreakdown.cgst)} + SGST (9%): ${formatPrice(taxBreakdown.sgst)}`
-                    : `IGST (18%): ${formatPrice(taxBreakdown.igst || 0)}`}
                 </div>
               </div>
 
+              {/* Grand Total */}
               <div className="border-t mt-4 pt-4">
                 <div className="flex justify-between text-xl font-bold">
-                  <span>Total</span>
+                  <span>Grand Total</span>
                   <span>{formatPrice(total)}</span>
                 </div>
               </div>
