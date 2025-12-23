@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import ProductDetailClient from './ProductDetailClient'
 
+export const runtime = 'edge'
 export const revalidate = 60
 
 async function getProduct(id: string) {

@@ -2,6 +2,7 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { formatPrice, formatDate } from '@/lib/utils'
 import Link from 'next/link'
 
+export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
