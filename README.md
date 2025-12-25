@@ -1,4 +1,4 @@
-# Intru E-commerce Store - Headless Commerce Solution
+# Intru-shop E-commerce Store - Headless Commerce Solution
 
 A high-performance, production-ready headless e-commerce platform built for **Intru** (intru.in), an Indian streetwear brand. This solution provides a complete end-to-end shopping experience with Indian e-commerce requirements including GST calculation, COD verification, Razorpay payments, and Shiprocket integration.
 
