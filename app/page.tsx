@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
 import Image from 'next/image'
+import { Navbar } from '@/components/Navbar'
+import { Footer } from '@/components/Footer'
 
 export const revalidate = 60 // Revalidate every 60 seconds
 
@@ -24,23 +26,8 @@ export default async function HomePage() {
   const products = await getProducts()
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
-        <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold">
-            Intru
-          </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/" className="hover:text-gray-600">
-              Shop
-            </Link>
-            <Link href="/cart" className="hover:text-gray-600">
-              Cart
-            </Link>
-          </div>
-        </nav>
-      </header>
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
 
       {/* Banner */}
       <div className="bg-gradient-to-r from-orange-500 to-pink-500 text-white py-3 text-center">
@@ -50,7 +37,7 @@ export default async function HomePage() {
       </div>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-16 flex-1">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h1 className="text-5xl font-bold mb-4">
             Indian Streetwear
@@ -61,7 +48,7 @@ export default async function HomePage() {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {products.map((product) => (
             <Link
               key={product.id}
@@ -110,6 +97,8 @@ export default async function HomePage() {
           </div>
         )}
       </section>
+
+      <Footer />
     </div>
   )
 }

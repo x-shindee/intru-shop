@@ -1,74 +1,54 @@
 /**
  * API Route: Admin Login
  * POST /api/admin/auth/login
+ * Verifies admin password against ADMIN_SECRET_KEY
  */
 
 export const runtime = 'edge'
 
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
-import { createHmacSha256 } from '@/lib/web-crypto'
+import { cookies } from 'next/headers'
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json()
+    const { password } = await req.json()
 
-    if (!email || !password) {
+    if (!password) {
       return NextResponse.json(
-        { success: false, error: 'Email and password required' },
+        { success: false, error: 'Password is required' },
         { status: 400 }
       )
     }
 
-    // Get admin user from database
-    const { data: admin, error } = await supabaseAdmin
-      .from('admin_users')
-      .select('*')
-      .eq('email', email.toLowerCase())
-      .eq('is_active', true)
-      .single()
+    // Get admin secret key from environment or use default
+    const adminSecretKey = process.env.ADMIN_SECRET_KEY || 'Kbssol@331'
 
-    if (error || !admin) {
+    // Verify password
+    if (password !== adminSecretKey) {
       return NextResponse.json(
-        { success: false, error: 'Invalid credentials' },
+        { success: false, error: 'Invalid password' },
         { status: 401 }
       )
     }
 
-    // Hash the provided password and compare
-    const hashedPassword = await createHmacSha256(
-      process.env.ADMIN_PASSWORD_SECRET || 'default-secret-change-in-production',
-      password
-    )
-
-    if (hashedPassword !== admin.password_hash) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid credentials' },
-        { status: 401 }
-      )
-    }
-
-    // Create a simple token (in production, use JWT)
-    const token = await createHmacSha256(
-      process.env.ADMIN_SESSION_SECRET || 'default-session-secret',
-      `${admin.id}-${admin.email}-${Date.now()}`
-    )
-
-    // Update last login
-    await supabaseAdmin
-      .from('admin_users')
-      .update({ last_login_at: new Date().toISOString() })
-      .eq('id', admin.id)
-
-    return NextResponse.json({
+    // Create response
+    const response = NextResponse.json({
       success: true,
-      token,
-      admin: {
-        id: admin.id,
-        email: admin.email,
-        role: admin.role
-      }
+      message: 'Login successful'
     })
+
+    // Set admin session cookie
+    response.cookies.set({
+      name: 'admin_session',
+      value: adminSecretKey,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/'
+    })
+
+    return response
   } catch (error: any) {
     console.error('Login error:', error)
     return NextResponse.json(
@@ -76,4 +56,16 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     )
   }
+}
+
+// Logout endpoint
+export async function DELETE(req: NextRequest) {
+  const response = NextResponse.json({
+    success: true,
+    message: 'Logged out successfully'
+  })
+
+  response.cookies.delete('admin_session')
+
+  return response
 }

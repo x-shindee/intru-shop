@@ -40,6 +40,12 @@ export default function AdminLayout({
                 🛍️ Orders
               </Link>
               <Link
+                href="/admin/pages"
+                className="block px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                📄 Pages
+              </Link>
+              <Link
                 href="/admin/settings"
                 className="block px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors"
               >

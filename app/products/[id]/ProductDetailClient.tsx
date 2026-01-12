@@ -1,16 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { formatPrice } from '@/lib/utils'
+import { useCartStore } from '@/lib/cart-store'
 import type { Product } from '@/lib/types'
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const router = useRouter()
+  const { addItem } = useCartStore()
   const [selectedSize, setSelectedSize] = useState<string>('')
   const [quantity, setQuantity] = useState(1)
+
+  // Hydrate cart store on mount
+  useEffect(() => {
+    useCartStore.persist.rehydrate()
+  }, [])
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -18,27 +25,24 @@ export default function ProductDetailClient({ product }: { product: Product }) {
       return
     }
 
-    // Get existing cart from localStorage
-    const cart = JSON.parse(localStorage.getItem('cart') || '[]')
-    
-    // Check if item already exists in cart
-    const existingItemIndex = cart.findIndex(
-      (item: any) => item.product.id === product.id && item.size === selectedSize
-    )
-
-    if (existingItemIndex > -1) {
-      // Update quantity
-      cart[existingItemIndex].quantity += quantity
-    } else {
-      // Add new item
-      cart.push({
-        product,
-        size: selectedSize,
-        quantity,
-      })
+    const selectedVariant = product.variants.find(v => v.size === selectedSize)
+    if (!selectedVariant) {
+      alert('Selected size not available')
+      return
     }
 
-    localStorage.setItem('cart', JSON.stringify(cart))
+    // Add to cart using Zustand store
+    addItem({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      quantity,
+      size: selectedSize,
+      image_url: product.image_url || undefined,
+      stock: selectedVariant.stock
+    })
+
+    // Navigate to cart
     router.push('/cart')
   }
 

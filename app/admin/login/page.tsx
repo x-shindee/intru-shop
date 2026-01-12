@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function AdminLoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState('')
+  const searchParams = useSearchParams()
+  const redirect = searchParams.get('redirect') || '/admin'
+  
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -19,7 +21,7 @@ export default function AdminLoginPage() {
       const res = await fetch('/api/admin/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ password })
       })
 
       const data = await res.json()
@@ -29,13 +31,12 @@ export default function AdminLoginPage() {
       }
 
       if (data.success) {
-        // Store admin session
-        localStorage.setItem('admin_token', data.token)
-        localStorage.setItem('admin_email', email)
-        router.push('/admin')
+        // Cookie is set by the API route
+        router.push(redirect)
+        router.refresh()
       }
     } catch (err: any) {
-      setError(err.message || 'Invalid credentials')
+      setError(err.message || 'Invalid password')
     } finally {
       setLoading(false)
     }
@@ -47,7 +48,7 @@ export default function AdminLoginPage() {
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold mb-2">Intru Admin</h1>
-            <p className="text-gray-600">Sign in to manage your store</p>
+            <p className="text-gray-600">Enter your admin password to continue</p>
           </div>
 
           {error && (
@@ -58,23 +59,8 @@ export default function AdminLoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                placeholder="admin@example.com"
-              />
-            </div>
-
-            <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
+                Admin Password
               </label>
               <input
                 id="password"
@@ -83,7 +69,8 @@ export default function AdminLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent"
-                placeholder="••••••••"
+                placeholder="Enter admin password"
+                autoFocus
               />
             </div>
 
@@ -100,6 +87,10 @@ export default function AdminLoginPage() {
             <a href="/" className="text-sm text-gray-600 hover:text-black">
               ← Back to Store
             </a>
+          </div>
+
+          <div className="mt-4 pt-4 border-t text-center text-xs text-gray-500">
+            Default password: Kbssol@331 (set ADMIN_SECRET_KEY env variable)
           </div>
         </div>
       </div>

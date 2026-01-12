@@ -1,50 +1,43 @@
-# 🛍️ INTRU E-Commerce Platform
+# Intru E-Commerce Platform
 
-**Live Site**: https://intru-shop.pages.dev  
-**Admin Panel**: https://intru-shop.pages.dev/admin  
+A modern, zero-cost e-commerce platform built with Next.js 15, Supabase, and Cloudflare Pages. Premium Indian streetwear brand with full-featured shopping cart, admin panel, and dynamic CMS.
 
-Indian streetwear e-commerce platform built with Next.js 15, Cloudflare Workers, and Supabase.
-
----
-
-## 📖 Documentation
-
-- **[USER_MANUAL.md](./USER_MANUAL.md)** - Complete guide for store owners and users
-- **[docs/archive/](./docs/archive/)** - Technical documentation archive
-
----
-
-## ✨ Features
+## 🚀 Features
 
 ### Customer Features
-- 🛒 Product browsing with filters
-- 💳 Secure checkout (Razorpay)
-- 📦 COD & Prepaid options
-- 🚚 Shiprocket integration
-- 📱 Mobile responsive
-- ⚡ Fast edge runtime
+- ✅ **Product Browsing**: Responsive grid layout with 2 columns mobile, 4 columns desktop
+- ✅ **Product Details**: Dynamic pages with SEO metadata, image gallery, size selector
+- ✅ **Shopping Cart**: Zustand-powered cart with localStorage persistence
+- ✅ **Categories**: Filter by T-Shirts, Shirts, Hoodies
+- ✅ **Checkout**: Razorpay payment integration + COD support
+- ✅ **SEO Optimized**: Dynamic metadata, sitemap.xml, structured data
 
 ### Admin Features
-- 📊 Dashboard with stats
-- 📦 Product management
-- 🛍️ Order tracking
-- ⚙️ Store settings
-- 💰 Revenue analytics
+- ✅ **Secure Authentication**: Middleware-protected admin panel with secret key
+- ✅ **Product Management**: Full CRUD operations with image upload
+- ✅ **Content Pages**: Dynamic CMS for About Us, Privacy Policy, etc.
+- ✅ **Order Management**: Track orders, payments, and shipping
+- ✅ **Dashboard**: Analytics and quick actions
 
----
+### Technical Features
+- ✅ **Edge Runtime**: All API routes run on Cloudflare Workers
+- ✅ **Zero-Cost**: Supabase free tier + Cloudflare Pages
+- ✅ **Type Safe**: Full TypeScript coverage
+- ✅ **Modern Stack**: Next.js 15 App Router, React 18, Tailwind CSS
+- ✅ **State Management**: Zustand for cart, localStorage persistence
+- ✅ **Database**: PostgreSQL via Supabase with Row Level Security
 
-## 🚀 Quick Start
+## 🛠️ Tech Stack
 
-### For Store Owners
+- **Framework**: Next.js 15 (App Router)
+- **Database**: Supabase (PostgreSQL)
+- **Styling**: Tailwind CSS
+- **State**: Zustand
+- **Hosting**: Cloudflare Pages
+- **Payments**: Razorpay
+- **Images**: Supabase Storage
 
-1. Access admin panel: https://intru-shop.pages.dev/admin
-2. View dashboard stats
-3. Manage products and orders
-4. Configure store settings
-
-See [USER_MANUAL.md](./USER_MANUAL.md) for complete guide.
-
-### For Developers
+## 📦 Installation
 
 ```bash
 # Clone repository
@@ -54,142 +47,191 @@ cd intru-shop
 # Install dependencies
 npm install
 
-# Setup environment variables
+# Set up environment variables
 cp .env.example .env.local
 # Edit .env.local with your credentials
 
 # Run development server
 npm run dev
-
-# Build for production
-npm run build
-npm run pages:build
 ```
 
----
+## 🔧 Environment Variables
 
-## 🛠️ Tech Stack
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
-- **Frontend**: Next.js 15, React 18, Tailwind CSS
-- **Backend**: Cloudflare Workers (Edge Runtime)
-- **Database**: Supabase PostgreSQL
-- **Payments**: Razorpay
-- **Shipping**: Shiprocket
-- **Hosting**: Cloudflare Pages
+# Admin Authentication
+ADMIN_SECRET_KEY=Kbssol@331
 
----
+# Razorpay (optional)
+NEXT_PUBLIC_RAZORPAY_KEY_ID=rzp_test_key
+RAZORPAY_KEY_SECRET=your_secret
 
-## 📋 Environment Variables
-
-Required in Cloudflare Pages dashboard:
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_RAZORPAY_KEY_ID=
-RAZORPAY_KEY_SECRET=
-RAZORPAY_WEBHOOK_SECRET=
-SHIPROCKET_EMAIL=
-SHIPROCKET_PASSWORD=
-NEXT_PUBLIC_APP_URL=
-WHATSAPP_BUSINESS_NUMBER=
+# App
+NEXT_PUBLIC_APP_URL=https://your-domain.pages.dev
 ```
 
----
+## 🗄️ Database Setup
 
-## 🏗️ Project Structure
+1. **Create Supabase Project**: Sign up at [supabase.com](https://supabase.com)
 
-```
-├── app/                    # Next.js 15 App Router
-│   ├── (customer)/        # Customer-facing pages
-│   ├── admin/             # Admin panel
-│   └── api/               # API routes (Edge Runtime)
-├── lib/                   # Utility functions
-│   ├── supabase.ts       # Database client
-│   ├── razorpay-edge.ts  # Payment client
-│   ├── web-crypto.ts     # Cryptography utils
-│   └── gst.ts            # Tax calculations
-├── docs/                  # Documentation
-└── public/               # Static assets
-```
+2. **Run SQL Schema**:
+   - Open Supabase SQL Editor
+   - Copy content from `supabase-schema-v3-refactored.sql`
+   - Execute the script
 
----
+3. **Create Storage Bucket**:
+   - Go to Storage in Supabase dashboard
+   - Create bucket named `products`
+   - Make it public
 
-## 🔐 Security
-
-- Edge Runtime with Web Crypto API
-- Row-Level Security (RLS) in Supabase
-- HMAC signature verification
-- Environment variable protection
-- Admin authentication (being added)
-
----
-
-## 📊 Database Schema
-
-Main tables:
-- `products` - Product catalog
-- `orders` - Customer orders
-- `admin_users` - Admin accounts
-- `settings` - Store configuration
-- `referral_codes` - Discount codes
-
-See `supabase-schema-v2.sql` for complete schema.
-
----
+4. **Configure RLS**: Row Level Security policies are included in the schema
 
 ## 🚀 Deployment
 
-**Automatic via GitHub**:
-1. Push to `main` branch
-2. Cloudflare Pages auto-deploys
-3. Build command: `npx @cloudflare/next-on-pages`
-4. Output: `.vercel/output/static`
+### Cloudflare Pages
 
-**Manual via Wrangler**:
-```bash
-npm run pages:build
-npx wrangler pages deploy .vercel/output/static --project-name intru-shop
+1. **Connect Repository**:
+   ```bash
+   # Push to GitHub
+   git push origin main
+   ```
+
+2. **Configure Build**:
+   - Build command: `npm run pages:build`
+   - Build output: `.vercel/output/static`
+   - Node version: 22.x
+
+3. **Set Environment Variables**: Add all env vars in Cloudflare Pages settings
+
+4. **Enable nodejs_compat**: 
+   - Go to Settings → Functions
+   - Add compatibility flag: `nodejs_compat`
+
+5. **Deploy**: Push to main branch triggers auto-deploy
+
+## 📚 Project Structure
+
+```
+intru-shop/
+├── app/
+│   ├── admin/               # Admin panel
+│   │   ├── pages/          # CMS pages management
+│   │   ├── products/       # Product CRUD
+│   │   ├── orders/         # Order management
+│   │   └── login/          # Admin authentication
+│   ├── api/
+│   │   ├── admin/          # Admin API routes
+│   │   ├── orders/         # Order processing
+│   │   └── config/         # Store configuration
+│   ├── cart/               # Shopping cart
+│   ├── checkout/           # Checkout flow
+│   ├── products/[id]/      # Product details
+│   ├── page.tsx            # Homepage
+│   ├── layout.tsx          # Root layout
+│   └── sitemap.ts          # Dynamic sitemap
+├── components/
+│   ├── Navbar.tsx          # Navigation with cart count
+│   └── Footer.tsx          # Footer with dynamic pages
+├── lib/
+│   ├── cart-store.ts       # Zustand cart store
+│   ├── supabase.ts         # Supabase clients
+│   ├── web-crypto.ts       # Web Crypto utilities
+│   └── utils.ts            # Helper functions
+├── middleware.ts           # Admin authentication
+├── next.config.js          # Next.js configuration
+├── package.json            # Dependencies
+└── supabase-schema-v3-refactored.sql
 ```
 
----
+## 🔐 Admin Panel
 
-## 📝 Common Tasks
+### Access
+- URL: `https://your-domain.pages.dev/admin/login`
+- Default Password: `Kbssol@331` (set via `ADMIN_SECRET_KEY`)
 
-### Add Product
-Currently via Supabase dashboard (admin form being added):
-1. Go to Supabase → Table Editor → products
-2. Insert row with product details
-3. Set `is_live = true` to show on site
+### Features
+1. **Dashboard**: Overview of products, orders, revenue
+2. **Products**: Add, edit, delete products with variants
+3. **Pages**: Manage content pages (About, Privacy, etc.)
+4. **Orders**: View and manage customer orders
+5. **Settings**: Configure store settings
 
-### Update Order Status
-Admin panel → Orders → Click order → Update status
+## 🛒 Shopping Cart
 
-### Configure Store
-Admin panel → Settings → Update configuration
+- **State Management**: Zustand with localStorage persistence
+- **Features**:
+  - Add/remove items
+  - Update quantities
+  - Size variants
+  - Stock validation
+  - Cart total calculation
+  - Persistent across sessions
 
----
+## 📱 Responsive Design
 
-## 🐛 Troubleshooting
+- **Mobile**: 2-column product grid, hamburger menu
+- **Tablet**: 3-column grid, expanded navigation
+- **Desktop**: 4-column grid, full navigation
 
-See [USER_MANUAL.md](./USER_MANUAL.md#troubleshooting) for common issues and solutions.
+## 🔍 SEO Features
 
----
+- ✅ Dynamic metadata for products and pages
+- ✅ XML sitemap generation
+- ✅ Open Graph tags
+- ✅ Twitter Card tags
+- ✅ Structured data
+- ✅ Semantic HTML
 
-## 📞 Support
+## 📊 Performance
 
-- **Documentation**: [USER_MANUAL.md](./USER_MANUAL.md)
-- **Technical Docs**: [docs/archive/](./docs/archive/)
-- **Issues**: GitHub Issues
+- **Edge Runtime**: All API routes on Cloudflare Workers
+- **ISR**: Incremental Static Regeneration (60s revalidation)
+- **Image Optimization**: Next.js Image component
+- **Code Splitting**: Automatic route-based splitting
+- **Caching**: Cloudflare CDN caching
 
----
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
 
 ## 📄 License
 
-Private - All rights reserved
+This project is licensed under the MIT License.
+
+## 🙏 Acknowledgments
+
+- **Next.js** for the amazing framework
+- **Supabase** for the backend infrastructure
+- **Cloudflare** for edge hosting
+- **Tailwind CSS** for styling
+
+## 📧 Support
+
+For issues or questions:
+- GitHub Issues: [Create Issue](https://github.com/x-shindee/intru-shop/issues)
+- Email: support@intru.in
+
+## 🎯 Roadmap
+
+- [ ] Customer accounts and order history
+- [ ] Product reviews and ratings
+- [ ] Wishlist functionality
+- [ ] Advanced search and filters
+- [ ] Email notifications
+- [ ] Multi-currency support
+- [ ] Inventory alerts
+- [ ] Bulk product import
 
 ---
 
-**Version**: 2.0  
-**Last Updated**: 2026-01-06
+**Built with ❤️ for Intru** | [Live Demo](https://intru-shop.pages.dev) | [Documentation](./docs)
