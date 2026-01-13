@@ -1,3 +1,4 @@
+export const runtime = 'edge'; // Forces the whole app to run on the Edge
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
