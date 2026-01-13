@@ -1,24 +1,18 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.supabase.co',
+        hostname: 'images.unsplash.com',
       },
       {
         protocol: 'https',
-        hostname: '**.supabase.in',
-      },
+        hostname: '*.supabase.co', // Allow Supabase images
+      }
     ],
+    unoptimized: true, // Crucial for Cloudflare Pages free tier
   },
-  eslint: {
-    ignoreDuringBuilds: true
-  },
-  typescript: {
-    ignoreBuildErrors: true
-  }
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
