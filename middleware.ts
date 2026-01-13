@@ -1,33 +1,22 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-export function middleware(request: NextRequest) {
-  const pathname = request.nextUrl.pathname
+export const runtime = 'experimental-edge'; // Required for Cloudflare
 
-  // Check if the request is for admin routes
-  if (pathname.startsWith('/admin')) {
-    // Allow access to login page
-    if (pathname === '/admin/login') {
+export function middleware(request: NextRequest) {
+  // 1. Protect Admin Routes
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    // Exception: Allow the login page itself
+    if (request.nextUrl.pathname === '/admin/login') {
       return NextResponse.next()
     }
 
-    // Check for admin session cookie
-    const adminSession = request.cookies.get('admin_session')
+    // Check for the "auth_token" cookie
+    const token = request.cookies.get('auth_token')
 
-    if (!adminSession) {
-      // Redirect to login if no session
+    // If no token, redirect to login
+    if (!token || token.value !== process.env.ADMIN_SECRET_KEY) {
       const loginUrl = new URL('/admin/login', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
-    }
-
-    // Verify the session value
-    const expectedSession = process.env.ADMIN_SECRET_KEY || 'Kbssol@331'
-    
-    if (adminSession.value !== expectedSession) {
-      // Invalid session - redirect to login
-      const loginUrl = new URL('/admin/login', request.url)
-      loginUrl.searchParams.set('redirect', pathname)
       return NextResponse.redirect(loginUrl)
     }
   }
@@ -36,5 +25,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*']
+  matcher: '/admin/:path*',
 }
